@@ -267,6 +267,7 @@
 
 .movieCard {
     animation: fadeInUp 0.6s ease-out;
+    cursor: pointer
 }
 
 .movieCard:nth-child(1) { animation-delay: 0.1s; }

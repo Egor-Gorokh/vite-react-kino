@@ -1,0 +1,454 @@
+.movieDetails {
+    min-height: 100vh;
+    background: #0f1419;
+    color: #ffffff;
+}
+
+.movieHero {
+    position: relative;
+    height: 70vh;
+    min-height: 500px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.backdropImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.4);
+}
+
+.heroOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+            to top,
+            rgba(15, 20, 25, 1) 0%,
+            rgba(15, 20, 25, 0.8) 50%,
+            rgba(15, 20, 25, 0.4) 100%
+    );
+}
+
+.heroContent {
+    position: relative;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    align-items: flex-end;
+}
+
+.posterContainer {
+    position: relative;
+}
+
+.poster {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.movieInfo {
+    padding-bottom: 2rem;
+}
+
+.movieTitle {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.1;
+}
+
+.movieOriginalTitle {
+    font-size: 1.2rem;
+    color: #90cea1;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.actionButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.watchTrailer {
+    background: linear-gradient(45deg, #01b4e4, #90cea1);
+    color: white;
+}
+
+.watchTrailer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(1, 180, 228, 0.4);
+}
+
+.addToFavorites {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.addToFavorites:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.movieMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.metaItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metaLabel {
+    font-size: 0.9rem;
+    color: #90cea1;
+    font-weight: 500;
+}
+
+.metaValue {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ratingStars {
+    color: #ffd700;
+}
+
+.genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.genre {
+    background: rgba(1, 180, 228, 0.2);
+    color: #01b4e4;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.overview {
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.movieContent {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.section {
+    margin-bottom: 3rem;
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #01b4e4;
+}
+
+.castGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1.5rem;
+}
+
+.castCard {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.castCard:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.castPhoto {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.castInfo {
+    padding: 1rem;
+}
+
+.castName {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.castCharacter {
+    font-size: 0.9rem;
+    color: #90cea1;
+}
+
+.imagesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.imageItem {
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.imageItem:hover {
+    transform: scale(1.05);
+}
+
+.imageItem img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.recommendationsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.recommendationCard {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.recommendationCard:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.recommendationPoster {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.recommendationInfo {
+    padding: 1rem;
+}
+
+.recommendationTitle {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    font-size: 1.2rem;
+}
+
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    font-size: 1.2rem;
+    color: #ff6b6b;
+}
+
+/* Светлая тема */
+:global(.lightTheme) .movieDetails {
+    background: #ffffff;
+    color: #333333;
+}
+
+:global(.lightTheme) .castCard,
+:global(.lightTheme) .recommendationCard {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+:global(.lightTheme) .castCard:hover,
+:global(.lightTheme) .recommendationCard:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+:global(.lightTheme) .addToFavorites {
+    background: rgba(0, 0, 0, 0.05);
+    color: #333333;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+:global(.lightTheme) .addToFavorites:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .movieHero {
+        height: auto;
+        min-height: auto;
+    }
+
+    .heroContent {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .posterContainer {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+
+    .movieTitle {
+        font-size: 2rem;
+    }
+
+    .actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .movieMeta {
+        justify-content: center;
+    }
+
+    .castGrid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .imagesGrid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .backButton {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+    }
+
+    .backButton:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    /* Для светлой темы */
+    :global(.lightTheme) .backButton {
+        background: rgba(0, 0, 0, 0.2);
+        color: #333;
+    }
+
+    :global(.lightTheme) .backButton:hover {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .backButton {
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+    }
+
+
+}
+
+    .backButton {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        background: #ffffff;
+        color: #0f1419;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+        font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .backButton:hover {
+        background: #f0f0f0;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Для светлой темы */
+    :global(.lightTheme) .backButton {
+        background: #0f1419;
+        color: #ffffff;
+    }
+
+    :global(.lightTheme) .backButton:hover {
+        background: #1a2430;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .backButton {
+            top: 1rem;
+            right: 1rem;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+    }

@@ -1,97 +1,92 @@
 import s from './FilteredMovies.module.css';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useGetTopRatedMoviesQuery } from '../../../features/movies/api/moviesApi.ts';
 
 interface Movie {
     id: number;
     title: string;
-    originalTitle: string;
-    rating: number;
-    genres: string[];
-    imageUrl?: string;
+    original_title: string;
+    vote_average: number;
+    genre_ids: number[];
+    poster_path?: string;
+    release_date: string;
+    popularity: number;
+}
+
+interface Genre {
+    id: number;
+    name: string;
 }
 
 type SortOption = 'popularity_desc' | 'popularity_asc' | 'rating_desc' | 'rating_asc' | 'release_desc' | 'release_asc' | 'title_asc' | 'title_desc';
 
+// Debounce функция
+const useDebounce = (value: [number, number], delay: number) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+};
+
+// Список жанров TMDB
+const TMDB_GENRES: Genre[] = [
+    { id: 28, name: 'Action' },
+    { id: 12, name: 'Adventure' },
+    { id: 16, name: 'Animation' },
+    { id: 35, name: 'Comedy' },
+    { id: 80, name: 'Crime' },
+    { id: 99, name: 'Documentary' },
+    { id: 18, name: 'Drama' },
+    { id: 10751, name: 'Family' },
+    { id: 14, name: 'Fantasy' },
+    { id: 36, name: 'History' },
+    { id: 27, name: 'Horror' },
+    { id: 10402, name: 'Music' },
+    { id: 9648, name: 'Mystery' },
+    { id: 10749, name: 'Romance' },
+    { id: 878, name: 'Science Fiction' },
+    { id: 10770, name: 'TV Movie' },
+    { id: 53, name: 'Thriller' },
+    { id: 10752, name: 'War' },
+    { id: 37, name: 'Western' }
+];
+
 export const FilteredMovies = () => {
+    const navigate = useNavigate();
     const [sortBy, setSortBy] = useState<SortOption>('popularity_desc');
-    const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+    const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
     const [ratingRange, setRatingRange] = useState<[number, number]>([0, 10]);
     const [favorites, setFavorites] = useState<number[]>([]);
     const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null);
     const sliderRef = useRef<HTMLDivElement>(null);
 
-    // Жанры для фильтрации
-    const genres = [
-        'Action', 'Animation', 'Crime', 'Drama', 'History',
-        'Mystery', 'Science Fiction', 'Thriller', 'Comedy', 'Adventure'
-    ];
+    // Используем debounce для рейтинга с задержкой 200ms
+    const debouncedRatingRange = useDebounce(ratingRange, 200);
 
-    // Пример данных фильмов
-    const movies: Movie[] = [
-        {
-            id: 1,
-            title: "AFTERBURN",
-            originalTitle: "Afterburn",
-            rating: 6.8,
-            genres: ['Action', 'Science Fiction']
-        },
-        {
-            id: 2,
-            title: "WAR OF THE WORLDS",
-            originalTitle: "War of the Worlds",
-            rating: 4.3,
-            genres: ['Action', 'Thriller']
-        },
-        {
-            id: 3,
-            title: "OUR FAULT",
-            originalTitle: "Our Fault",
-            rating: 7.6,
-            genres: ['Drama']
-        },
-        {
-            id: 4,
-            title: "HUNTING GROUNDS",
-            originalTitle: "Hunting Grounds",
-            rating: 6.4,
-            genres: ['Action', 'Thriller']
-        },
-        {
-            id: 5,
-            title: "CAPTAIN HOOK",
-            originalTitle: "Captain Hook - The Cursed Tides",
-            rating: 4.8,
-            genres: ['Adventure', 'Action']
-        },
-        {
-            id: 6,
-            title: "THE UGLY STEPSISTER",
-            originalTitle: "The Ugly Stepsister",
-            rating: 7.3,
-            genres: ['Drama', 'Mystery']
-        },
-        {
-            id: 7,
-            title: "THE ELIXIR",
-            originalTitle: "The Elixir",
-            rating: 5.9,
-            genres: ['Mystery', 'Thriller']
-        },
-        {
-            id: 8,
-            title: "DEMON SLAYER",
-            originalTitle: "Demon Slayer: Kimetsu no Yaiba Infinity Castle",
-            rating: 8.7,
-            genres: ['Animation', 'Action']
-        },
-        {
-            id: 9,
-            title: "STOLEN GIRL",
-            originalTitle: "Stolen Girl",
-            rating: 6.2,
-            genres: ['Crime', 'Drama']
-        }
-    ];
+    // Получаем данные из API - используем топ рейтинговые фильмы
+    const { data: moviesData, isLoading, error } = useGetTopRatedMoviesQuery(1);
+
+    // Преобразуем данные из API в наш формат
+    const movies: Movie[] = moviesData?.results?.map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        original_title: movie.original_title,
+        vote_average: movie.vote_average,
+        genre_ids: movie.genre_ids,
+        poster_path: movie.poster_path,
+        release_date: movie.release_date,
+        popularity: movie.popularity
+    })) || [];
 
     const sortOptions = [
         { id: 'popularity_desc', label: 'Popularity ↓' },
@@ -111,7 +106,8 @@ export const FilteredMovies = () => {
         setRatingRange([0, 10]);
     };
 
-    const toggleFavorite = (movieId: number) => {
+    const toggleFavorite = (movieId: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Предотвращаем переход на страницу фильма
         setFavorites(prev =>
             prev.includes(movieId)
                 ? prev.filter(id => id !== movieId)
@@ -119,21 +115,32 @@ export const FilteredMovies = () => {
         );
     };
 
-    const toggleGenre = (genre: string) => {
+    const toggleGenre = (genreId: number) => {
         setSelectedGenres(prev =>
-            prev.includes(genre)
-                ? prev.filter(g => g !== genre)
-                : [...prev, genre]
+            prev.includes(genreId)
+                ? prev.filter(id => id !== genreId)
+                : [...prev, genreId]
         );
     };
 
-    // Обработчики для двойного ползунка
-    const handleMouseDown = (thumb: 'min' | 'max') => (e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsDragging(thumb);
+    // Функция для получения URL изображения
+    const getImageUrl = (path: string | undefined, size: string = 'w500') => {
+        if (!path) return null;
+        return `https://image.tmdb.org/t/p/${size}${path}`;
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    // Навигация на страницу деталей фильма
+    const handleMovieClick = (movieId: number) => {
+        navigate(`/movie/${movieId}`);
+    };
+
+    // Обработчики для двойного ползунка с useCallback для оптимизации
+    const handleMouseDown = useCallback((thumb: 'min' | 'max') => (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsDragging(thumb);
+    }, []);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDragging || !sliderRef.current) return;
 
         const slider = sliderRef.current;
@@ -146,11 +153,11 @@ export const FilteredMovies = () => {
         } else {
             setRatingRange(prev => [prev[0], Math.max(percentage, prev[0] + 0.1)]);
         }
-    };
+    }, [isDragging]);
 
-    const handleMouseUp = () => {
+    const handleMouseUp = useCallback(() => {
         setIsDragging(null);
-    };
+    }, []);
 
     useEffect(() => {
         if (isDragging) {
@@ -161,29 +168,37 @@ export const FilteredMovies = () => {
                 document.removeEventListener('mouseup', handleMouseUp);
             };
         }
-    }, [isDragging]);
+    }, [isDragging, handleMouseMove, handleMouseUp]);
 
-    // Фильтрация и сортировка фильмов
+    // Эффект для обработки изменений рейтинга (с debounce)
+    useEffect(() => {
+        console.log('Rating range changed (debounced):', debouncedRatingRange);
+    }, [debouncedRatingRange]);
+
+    // Фильтрация и сортировка фильмов (используем debounced рейтинг)
     const filteredAndSortedMovies = movies
         .filter(movie => {
             // Фильтрация по жанрам
             if (selectedGenres.length > 0) {
-                return selectedGenres.some(genre => movie.genres.includes(genre));
+                return selectedGenres.some(genreId => movie.genre_ids.includes(genreId));
             }
             return true;
         })
-        .filter(movie => movie.rating >= ratingRange[0] && movie.rating <= ratingRange[1]) // Фильтрация по рейтингу
+        .filter(movie => movie.vote_average >= debouncedRatingRange[0] && movie.vote_average <= debouncedRatingRange[1])
         .sort((a, b) => {
-            // Сортировка по выбранному критерию
             switch (sortBy) {
                 case 'popularity_desc':
-                    return b.rating - a.rating;
+                    return b.popularity - a.popularity;
                 case 'popularity_asc':
-                    return a.rating - b.rating;
+                    return a.popularity - b.popularity;
                 case 'rating_desc':
-                    return b.rating - a.rating;
+                    return b.vote_average - a.vote_average;
                 case 'rating_asc':
-                    return a.rating - b.rating;
+                    return a.vote_average - b.vote_average;
+                case 'release_desc':
+                    return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
+                case 'release_asc':
+                    return new Date(a.release_date).getTime() - new Date(b.release_date).getTime();
                 case 'title_asc':
                     return a.title.localeCompare(b.title);
                 case 'title_desc':
@@ -193,19 +208,43 @@ export const FilteredMovies = () => {
             }
         });
 
-    // Расчет позиций для ползунков
+    // Расчет позиций для ползунков (используем актуальные значения без debounce для плавности UI)
     const minPosition = (ratingRange[0] / 10) * 100;
     const maxPosition = (ratingRange[1] / 10) * 100;
+
+    if (isLoading) {
+        return (
+            <div className={s.filteredMovies}>
+                <div className={s.loading}>Loading movies...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={s.filteredMovies}>
+                <div className={s.error}>Error loading movies. Please try again later.</div>
+            </div>
+        );
+    }
 
     return (
         <div className={s.filteredMovies}>
             <div className={s.header}>
                 <h1 className={s.title}>Filtered Movies</h1>
+                <div className={s.resultsCount}>
+                    Found {filteredAndSortedMovies.length} movies
+                </div>
             </div>
 
             {/* Боковая панель фильтров */}
             <div className={s.filtersSidebar}>
-
+                <div className={s.filtersHeader}>
+                    <h2 className={s.filtersTitle}>Filters / Sort</h2>
+                    <button className={s.resetButton} onClick={resetFilters}>
+                        Reset filters
+                    </button>
+                </div>
 
                 {/* Сортировка */}
                 <div className={`${s.filterSection} ${s.sortSection}`}>
@@ -227,14 +266,14 @@ export const FilteredMovies = () => {
                 <div className={`${s.filterSection} ${s.genreSection}`}>
                     <h3 className={s.sectionTitle}>Genres</h3>
                     <div className={s.genresGrid}>
-                        {genres.map(genre => (
-                            <label key={genre} className={s.genreCheckbox}>
+                        {TMDB_GENRES.map(genre => (
+                            <label key={genre.id} className={s.genreCheckbox}>
                                 <input
                                     type="checkbox"
-                                    checked={selectedGenres.includes(genre)}
-                                    onChange={() => toggleGenre(genre)}
+                                    checked={selectedGenres.includes(genre.id)}
+                                    onChange={() => toggleGenre(genre.id)}
                                 />
-                                <span className={s.genreLabel}>{genre}</span>
+                                <span className={s.genreLabel}>{genre.name}</span>
                             </label>
                         ))}
                     </div>
@@ -267,66 +306,80 @@ export const FilteredMovies = () => {
                         <span>{ratingRange[0].toFixed(1)}</span>
                         <span>{ratingRange[1].toFixed(1)}</span>
                     </div>
-                </div>
-                <div className={s.filtersHeader}>
-                    <h2 className={s.filtersTitle}>Filters / Sort</h2>
-                    <button className={s.resetButton} onClick={resetFilters}>
-                        Reset filters
-                    </button>
+                    <div style={{ fontSize: '0.8rem', color: '#90cea1', textAlign: 'center', marginTop: '0.5rem' }}>
+                        Updates after 200ms delay
+                    </div>
                 </div>
             </div>
 
             {/* Сетка фильмов */}
             <div className={s.moviesContent}>
-                <div className={s.moviesGrid}>
-                    {filteredAndSortedMovies.map((movie) => (
-                        <div key={movie.id} className={s.movieCard}>
-                            <div className={s.movieImage}>
-                                {movie.imageUrl ? (
-                                    <img
-                                        src={movie.imageUrl}
-                                        alt={movie.title}
-                                        className={s.movieImage}
-                                    />
-                                ) : (
-                                    <div style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: 'linear-gradient(45deg, #1a1a2e, #16213e)',
-                                        color: '#666',
-                                        fontSize: '0.8rem',
-                                        textAlign: 'center',
-                                        padding: '1rem'
-                                    }}>
-                                        {movie.title}
+                {filteredAndSortedMovies.length === 0 ? (
+                    <div className={s.noResults}>
+                        No movies found matching your filters. Try adjusting your criteria.
+                    </div>
+                ) : (
+                    <div className={s.moviesGrid}>
+                        {filteredAndSortedMovies.map((movie) => {
+                            const imageUrl = getImageUrl(movie.poster_path);
+
+                            return (
+                                <div
+                                    key={movie.id}
+                                    className={s.movieCard}
+                                    onClick={() => handleMovieClick(movie.id)}
+                                >
+                                    <div className={s.movieImage}>
+                                        {imageUrl ? (
+                                            <img
+                                                src={imageUrl}
+                                                alt={movie.title}
+                                                className={s.movieImage}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className={s.moviePlaceholder}>
+                                                {movie.title}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            <button
-                                className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavorite(movie.id);
-                                }}
-                            >
-                                <span className={s.heartIcon}>❤</span>
-                            </button>
+                                    <button
+                                        className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
+                                        onClick={(e) => toggleFavorite(movie.id, e)}
+                                    >
+                                        <span className={s.heartIcon}>❤</span>
+                                    </button>
 
-                            <div className={s.movieInfo}>
-                                <h3 className={s.movieTitle}>{movie.title}</h3>
-                                <p className={s.movieOriginalTitle}>{movie.originalTitle}</p>
+                                    <div className={s.movieInfo}>
+                                        <h3 className={s.movieTitle}>{movie.title}</h3>
+                                        <p className={s.movieOriginalTitle}>{movie.original_title}</p>
 
-                                <div className={s.movieRating}>
-                                    <span className={s.ratingValue}>{movie.rating}/10</span>
+                                        <div className={s.movieRating}>
+                                            <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
+                                        </div>
+
+                                        <div className={s.movieDetails}>
+                                            <span className={s.releaseDate}>
+                                                {new Date(movie.release_date).getFullYear()}
+                                            </span>
+                                            <div className={s.movieGenres}>
+                                                {movie.genre_ids.slice(0, 2).map(genreId => {
+                                                    const genre = TMDB_GENRES.find(g => g.id === genreId);
+                                                    return genre ? (
+                                                        <span key={genreId} className={s.genreTag}>
+                                                            {genre.name}
+                                                        </span>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

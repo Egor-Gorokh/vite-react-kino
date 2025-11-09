@@ -8,7 +8,7 @@ export const Header = () => {
     return (
         <header className={s.header}>
             <div className={s.logo}>
-                <img src={logo} alt="TMDB Logo"/>
+                <a href={'/'}>  <img src={logo} alt="TMDB Logo"/></a>
             </div>
             <div className={s.menu}>
                 <nav>

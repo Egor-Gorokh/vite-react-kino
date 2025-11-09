@@ -1,57 +1,48 @@
 import s from './CategoryMovies.module.css';
-import { useState } from 'react';
-
-interface Movie {
-    id: number;
-    title: string;
-    originalTitle: string;
-    rating: number;
-    imageUrl?: string;
-}
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import {
+    useGetPopularMoviesQuery,
+    useGetTopRatedMoviesQuery,
+    useGetUpcomingMoviesQuery,
+    useGetNowPlayingMoviesQuery
+} from '../../../features/movies/api/moviesApi.ts';
 
 type TabType = 'popular' | 'top-rated' | 'upcoming' | 'now-playing';
 
 export const CategoryMovies = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<TabType>('popular');
     const [favorites, setFavorites] = useState<number[]>([]);
+    const navigate = useNavigate(); // Добавил навигацию
 
-    // Данные для разных вкладок
-    const moviesData: Record<TabType, Movie[]> = {
-        'popular': [
-            { id: 1, title: "AFTERBURN", originalTitle: "Afterburn", rating: 6.8 },
-            { id: 2, title: "WAR OF WORLDS", originalTitle: "War of the Worlds", rating: 4.3 },
-            { id: 3, title: "TOMMY O'DONNELL", originalTitle: "Tommy O'Donnell", rating: 4.3 },
-            { id: 4, title: "OUR FAULT", originalTitle: "Our Fault", rating: 7.6 },
-            { id: 5, title: "HUNTING GROUNDS", originalTitle: "Hunting Grounds", rating: 6.4 },
-            { id: 6, title: "CAPTAIN HOOK", originalTitle: "Captain Hook - The Cursed Tides", rating: 4.8 }
-        ],
-        'top-rated': [
-            { id: 7, title: "THE GODFATHER", originalTitle: "The Godfather", rating: 9.2 },
-            { id: 8, title: "THE SHAWSHANK", originalTitle: "The Shawshank Redemption", rating: 9.3 },
-            { id: 9, title: "THE DARK KNIGHT", originalTitle: "The Dark Knight", rating: 9.0 },
-            { id: 10, title: "PULP FICTION", originalTitle: "Pulp Fiction", rating: 8.9 },
-            { id: 11, title: "FIGHT CLUB", originalTitle: "Fight Club", rating: 8.8 },
-            { id: 12, title: "INCEPTION", originalTitle: "Inception", rating: 8.7 }
-        ],
-        'upcoming': [
-            { id: 13, title: "THE UGLY STEPSISTER", originalTitle: "The Ugly Stepsister", rating: 7.3 },
-            { id: 14, title: "THE ELIXIR", originalTitle: "The Elixir", rating: 5.9 },
-            { id: 15, title: "AVATAR 3", originalTitle: "Avatar 3", rating: 0.0 },
-            { id: 16, title: "SPIDER-MAN 4", originalTitle: "Spider-Man 4", rating: 0.0 },
-            { id: 17, title: "BLADE RUNNER 3", originalTitle: "Blade Runner 3", rating: 0.0 },
-            { id: 18, title: "STAR WARS", originalTitle: "Star Wars: New Jedi", rating: 0.0 }
-        ],
-        'now-playing': [
-            { id: 19, title: "DUNE: PART TWO", originalTitle: "Dune: Part Two", rating: 8.5 },
-            { id: 20, title: "OPPENHEIMER", originalTitle: "Oppenheimer", rating: 8.4 },
-            { id: 21, title: "BARBIE", originalTitle: "Barbie", rating: 7.0 },
-            { id: 22, title: "JOHN WICK 4", originalTitle: "John Wick: Chapter 4", rating: 7.8 },
-            { id: 23, title: "GUARDIANS 3", originalTitle: "Guardians of the Galaxy Vol. 3", rating: 7.9 },
-            { id: 24, title: "FAST X", originalTitle: "Fast X", rating: 5.8 }
-        ]
+    // Читаем параметр tab из URL при загрузке компонента
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('tab') as TabType;
+        if (tabFromUrl && ['popular', 'top-rated', 'upcoming', 'now-playing'].includes(tabFromUrl)) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams]);
+
+    // Используем хуки для всех типов фильмов
+    const { data: popularMovies, isLoading: popularLoading, error: popularError } = useGetPopularMoviesQuery(1);
+    const { data: topRatedMovies, isLoading: topRatedLoading, error: topRatedError } = useGetTopRatedMoviesQuery(1);
+    const { data: upcomingMovies, isLoading: upcomingLoading, error: upcomingError } = useGetUpcomingMoviesQuery(1);
+    const { data: nowPlayingMovies, isLoading: nowPlayingLoading, error: nowPlayingError } = useGetNowPlayingMoviesQuery(1);
+
+    const handleTabChange = (tab: TabType) => {
+        setActiveTab(tab);
+        // Обновляем URL с новым параметром tab
+        setSearchParams({ tab });
     };
 
-    const toggleFavorite = (movieId: number) => {
+    // Добавил функцию для перехода на детальную страницу
+    const handleMovieClick = (movieId: number) => {
+        navigate(`/movie/${movieId}`);
+    };
+
+    const toggleFavorite = (movieId: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Предотвращаем всплытие
         setFavorites(prev =>
             prev.includes(movieId)
                 ? prev.filter(id => id !== movieId)
@@ -59,12 +50,52 @@ export const CategoryMovies = () => {
         );
     };
 
+    const renderStars = (rating: number) => {
+        const stars = [];
+        const filledStars = Math.round(rating / 2);
+
+        for (let i = 0; i < 5; i++) {
+            stars.push(
+                <span key={i} className={s.ratingStars}>
+                    {i < filledStars ? '★' : '☆'}
+                </span>
+            );
+        }
+        return stars;
+    };
+
+    // Выбираем данные в зависимости от активного таба
+    const getCurrentMoviesData = () => {
+        switch (activeTab) {
+            case 'popular':
+                return { movies: popularMovies?.results || [], isLoading: popularLoading, error: popularError };
+            case 'top-rated':
+                return { movies: topRatedMovies?.results || [], isLoading: topRatedLoading, error: topRatedError };
+            case 'upcoming':
+                return { movies: upcomingMovies?.results || [], isLoading: upcomingLoading, error: upcomingError };
+            case 'now-playing':
+                return { movies: nowPlayingMovies?.results || [], isLoading: nowPlayingLoading, error: nowPlayingError };
+            default:
+                return { movies: popularMovies?.results || [], isLoading: popularLoading, error: popularError };
+        }
+    };
+
+    const { movies, isLoading, error } = getCurrentMoviesData();
+
     const tabs = [
         { id: 'popular', label: 'Popular Movies' },
         { id: 'top-rated', label: 'Top Rated Movies' },
         { id: 'upcoming', label: 'Upcoming Movies' },
         { id: 'now-playing', label: 'Now Playing Movies' }
     ];
+
+    if (isLoading) {
+        return <div className={s.loading}>Loading movies...</div>;
+    }
+
+    if (error) {
+        return <div className={s.error}>Error loading movies. Please try again later.</div>;
+    }
 
     return (
         <div className={s.categoryMovies}>
@@ -76,7 +107,7 @@ export const CategoryMovies = () => {
                         <button
                             key={tab.id}
                             className={`${s.tab} ${activeTab === tab.id ? s.active : ''}`}
-                            onClick={() => setActiveTab(tab.id as TabType)}
+                            onClick={() => handleTabChange(tab.id as TabType)}
                         >
                             {tab.label}
                         </button>
@@ -85,12 +116,16 @@ export const CategoryMovies = () => {
             </div>
 
             <div className={s.moviesGrid}>
-                {moviesData[activeTab].map((movie) => (
-                    <div key={movie.id} className={s.movieCard}>
+                {movies.map((movie) => (
+                    <div
+                        key={movie.id}
+                        className={s.movieCard}
+                        onClick={() => handleMovieClick(movie.id)} // Добавил клик на карточку
+                    >
                         <div className={s.movieImage}>
-                            {movie.imageUrl ? (
+                            {movie.poster_path ? (
                                 <img
-                                    src={movie.imageUrl}
+                                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                                     alt={movie.title}
                                     className={s.movieImage}
                                 />
@@ -103,7 +138,7 @@ export const CategoryMovies = () => {
                                     justifyContent: 'center',
                                     background: 'linear-gradient(45deg, #1a1a2e, #16213e)',
                                     color: '#666',
-                                    fontSize: '0.7rem',
+                                    fontSize: '0.8rem',
                                     textAlign: 'center',
                                     padding: '0.5rem'
                                 }}>
@@ -116,7 +151,7 @@ export const CategoryMovies = () => {
                             className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                toggleFavorite(movie.id);
+                                toggleFavorite(movie.id, e);
                             }}
                         >
                             <span className={s.heartIcon}>❤</span>
@@ -124,10 +159,13 @@ export const CategoryMovies = () => {
 
                         <div className={s.movieInfo}>
                             <h3 className={s.movieTitle}>{movie.title}</h3>
-                            <p className={s.movieOriginalTitle}>{movie.originalTitle}</p>
+                            <p className={s.movieOriginalTitle}>{movie.original_title}</p>
 
                             <div className={s.movieRating}>
-                                <span className={s.ratingValue}>{movie.rating > 0 ? `${movie.rating}/10` : 'Coming Soon'}</span>
+                                <div className={s.ratingStars}>
+                                    {renderStars(movie.vote_average)}
+                                </div>
+                                <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
                             </div>
                         </div>
                     </div>
