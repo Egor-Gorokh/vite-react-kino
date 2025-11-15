@@ -1,3 +1,4 @@
+// CategoryMovies.tsx
 import s from './CategoryMovies.module.css';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import {
 } from '../../../features/movies/api/moviesApi.ts';
 import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
 import { useDispatch } from "react-redux";
+import { MovieCardSkeleton } from '../Skeletons/MovieCardSkeleton.tsx';
 
 type TabType = 'popular' | 'top-rated' | 'upcoming' | 'now-playing';
 
@@ -99,7 +101,6 @@ export const CategoryMovies = () => {
             setAllMovies(prev => {
                 const currentTabMovies = prev[activeTab] || [];
 
-                // Если это первая страница, заменяем все фильмы
                 if (currentPage === 1) {
                     return {
                         ...prev,
@@ -107,7 +108,6 @@ export const CategoryMovies = () => {
                     };
                 }
 
-                // Если это не первая страница, добавляем фильмы, избегая дубликатов
                 const newMovies = currentData.results.filter(
                     newMovie => !currentTabMovies.some(existingMovie => existingMovie.id === newMovie.id)
                 );
@@ -124,7 +124,6 @@ export const CategoryMovies = () => {
     const loadMore = useCallback(() => {
         if (currentLoading || !currentData) return;
 
-        // Проверяем, есть ли еще страницы для загрузки
         if (currentData.total_pages && currentPage < currentData.total_pages) {
             setCurrentPages(prev => ({
                 ...prev,
@@ -138,7 +137,6 @@ export const CategoryMovies = () => {
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
 
-            // Загружаем следующую страницу когда до конца осталось 300px
             if (scrollHeight - (scrollTop + clientHeight) < 300 && !currentLoading) {
                 loadMore();
             }
@@ -149,15 +147,12 @@ export const CategoryMovies = () => {
     }, [loadMore, currentLoading]);
 
     const handleTabChange = (tab: TabType) => {
-        // Сбрасываем страницу на 1 при смене таба
         setCurrentPages(prev => ({
             ...prev,
             [tab]: 1
         }));
         setActiveTab(tab);
         setSearchParams({ tab });
-
-        // Очищаем фильмы для нового таба (начинаем с пустого массива)
         setAllMovies(prev => ({
             ...prev,
             [tab]: []
@@ -203,6 +198,34 @@ export const CategoryMovies = () => {
     ];
 
     const currentError = getCurrentData().error;
+
+    // Показываем скелетоны при первой загрузке
+    if (currentLoading && currentMovies.length === 0) {
+        return (
+            <div className={s.categoryMovies}>
+                <div className={s.header}>
+                    <h1 className={s.title}>Category Movies</h1>
+                    <div className={s.tabs}>
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                className={`${s.tab} ${activeTab === tab.id ? s.active : ''}`}
+                                onClick={() => handleTabChange(tab.id as TabType)}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className={s.moviesGrid}>
+                    {Array.from({ length: 12 }).map((_, index) => (
+                        <MovieCardSkeleton key={index} />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (currentError) {
         return <div className={s.error}>Error loading movies. Please try again later.</div>;
@@ -269,10 +292,14 @@ export const CategoryMovies = () => {
                 ))}
             </div>
 
-            {/* Индикатор загрузки */}
-            {currentLoading && (
+            {/* Индикатор загрузки при пагинации */}
+            {currentLoading && currentMovies.length > 0 && (
                 <div className={s.loading}>
-                    Loading more movies...
+                    <div className={s.skeletonGrid}>
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <MovieCardSkeleton key={index} />
+                        ))}
+                    </div>
                 </div>
             )}
 

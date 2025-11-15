@@ -277,3 +277,91 @@
 .movieCard:nth-child(5) { animation-delay: 0.5s; }
 .movieCard:nth-child(6) { animation-delay: 0.6s; }
 
+/* CategoryMovies.module.css - добавьте эти стили */
+
+.skeletonTabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.skeletonTab {
+    height: 40px;
+    width: 120px;
+    background: var(--skeleton-shine, linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%));
+    background-size: 200% 100%;
+    animation: skeletonShine 1.5s infinite;
+    border-radius: 8px;
+}
+
+.skeletonCategoryHeader {
+    height: 48px;
+    width: 250px;
+    background: var(--skeleton-shine, linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%));
+    background-size: 200% 100%;
+    animation: skeletonShine 1.5s infinite;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    margin-left: 1rem;
+}
+
+/* Темная тема для CategoryMovies */
+:global(.dark) .skeletonTab,
+:global(.dark) .skeletonCategoryHeader {
+    --skeleton-shine: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+}
+/* CategoryMovies.module.css - добавьте */
+.skeletonGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 0 1rem;
+}
+
+/* FilteredMovies.module.css - добавьте */
+.skeletonTitle {
+    height: 40px;
+    width: 300px;
+    background: var(--skeleton-bg);
+    border-radius: 8px;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeletonResults {
+    height: 24px;
+    width: 150px;
+    background: var(--skeleton-bg);
+    border-radius: 4px;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeletonContent {
+    display: flex;
+    gap: 2rem;
+}
+
+.skeletonFilterSection {
+    height: 120px;
+    background: var(--skeleton-bg);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+:root {
+    --skeleton-bg: #f0f0f0;
+}
+
+:global(.dark) {
+    --skeleton-bg: #2a2a2a;
+}

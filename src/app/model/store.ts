@@ -1,33 +1,21 @@
-
-
-
-/*import { configureStore } from '@reduxjs/toolkit'
-import { baseApi } from '../api/baseApi.ts'
-
-export const store = configureStore({
-    reducer: {
-        [baseApi.reducerPath]: baseApi.reducer,
-    },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(baseApi.middleware),
-})
-
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
-*/
-
-import { configureStore } from '@reduxjs/toolkit'
-import { baseApi } from '../api/baseApi.ts'
-import favoritesReducer from '../../features/favorites/favoritesSlice.ts' // Импортируем наш slice
+// store/store.ts
+import { configureStore } from '@reduxjs/toolkit';
+import { moviesApi } from '../../features/movies/api/moviesApi';
+import favoritesReducer from '../../features/favorites/favoritesSlice';
+import loadingReducer from '../../features/loading/loadingSlice';
+import { loadingMiddleware } from '../middleware/loadingMiddleware';
 
 export const store = configureStore({
     reducer: {
-        [baseApi.reducerPath]: baseApi.reducer,
-        favorites: favoritesReducer, // Добавляем favorites
+        favorites: favoritesReducer,
+        loading: loadingReducer,
+        [moviesApi.reducerPath]: moviesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(baseApi.middleware),
-})
+        getDefaultMiddleware()
+            .concat(moviesApi.middleware)
+            .concat(loadingMiddleware),
+});
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

@@ -1,8 +1,10 @@
+// MainPage.tsx
 import s from './MainPage.module.css';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from "../../../common/components/Search/Search.tsx";
 import { MoviesSection } from "../../../common/components/MoviesSection/MoviesSection.tsx";
+import { MoviesSectionSkeleton } from '../../../common/components/Skeletons/MoviesSectionSkeleton.tsx';
 import {
     useGetPopularMoviesQuery,
     useGetTopRatedMoviesQuery,
@@ -21,10 +23,12 @@ export const MainPage = () => {
     const { data: upcomingMovies, isLoading: upcomingLoading, error: upcomingError } = useGetUpcomingMoviesQuery(1);
     const { data: nowPlayingMovies, isLoading: nowPlayingLoading, error: nowPlayingError } = useGetNowPlayingMoviesQuery(1);
 
+    // Проверяем, идет ли загрузка хотя бы одного раздела
+    const isLoading = popularLoading || topRatedLoading || upcomingLoading || nowPlayingLoading;
+
     // Устанавливаем backdrop популярного фильма как фон
     useEffect(() => {
         if (popularMovies?.results && popularMovies.results.length > 0) {
-            // Берем первый популярный фильм у которого есть backdrop
             const movieWithBackdrop = popularMovies.results.find(movie => movie.backdrop_path);
             if (movieWithBackdrop) {
                 const backdropUrl = `https://image.tmdb.org/t/p/w1280${movieWithBackdrop.backdrop_path}`;
@@ -46,6 +50,32 @@ export const MainPage = () => {
         setSearchQuery(query);
     };
 
+    // Показываем скелетоны во время загрузки
+    if (isLoading) {
+        return (
+            <>
+                <div className={s.mainPage}>
+                    <div className={s.backgroundOverlay}></div>
+                    <div className={s.heroSection}>
+                        <h1 className={s.welcomeTitle}>WELCOME</h1>
+                        <p className={s.subtitle}>Browse highlighted titles from TMDB</p>
+                        <Search
+                            searchQuery={searchQuery}
+                            onSearchChange={handleSearchChange}
+                            onSearchSubmit={handleSearch}
+                        />
+                    </div>
+                </div>
+
+                {/* Скелетоны для всех разделов */}
+                <MoviesSectionSkeleton />
+                <MoviesSectionSkeleton />
+                <MoviesSectionSkeleton />
+                <MoviesSectionSkeleton />
+            </>
+        );
+    }
+
     return (
         <>
             <div
@@ -53,7 +83,7 @@ export const MainPage = () => {
                 style={{
                     backgroundImage: backgroundImage
                         ? `url(${backgroundImage})`
-                        : 'linear-gradient(45deg, #1a1a2e, #16213e)' // fallback градиент
+                        : 'linear-gradient(45deg, #1a1a2e, #16213e)'
                 }}
             >
                 <div className={s.backgroundOverlay}></div>
@@ -73,7 +103,7 @@ export const MainPage = () => {
             <MoviesSection
                 title="Popular Movies"
                 movies={popularMovies?.results || []}
-                isLoading={popularLoading}
+                isLoading={false}
                 error={popularError}
                 viewMoreLink="/categoryMovies?tab=popular"
             />
@@ -82,7 +112,7 @@ export const MainPage = () => {
             <MoviesSection
                 title="Top Rated Movies"
                 movies={topRatedMovies?.results || []}
-                isLoading={topRatedLoading}
+                isLoading={false}
                 error={topRatedError}
                 viewMoreLink="/categoryMovies?tab=top-rated"
             />
@@ -91,7 +121,7 @@ export const MainPage = () => {
             <MoviesSection
                 title="Upcoming Movies"
                 movies={upcomingMovies?.results || []}
-                isLoading={upcomingLoading}
+                isLoading={false}
                 error={upcomingError}
                 viewMoreLink="/categoryMovies?tab=upcoming"
             />
@@ -100,7 +130,7 @@ export const MainPage = () => {
             <MoviesSection
                 title="Now Playing Movies"
                 movies={nowPlayingMovies?.results || []}
-                isLoading={nowPlayingLoading}
+                isLoading={false}
                 error={nowPlayingError}
                 viewMoreLink="/categoryMovies?tab=now-playing"
             />

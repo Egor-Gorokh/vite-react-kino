@@ -1,0 +1,75 @@
+/* components/Skeletons/MoviesSectionSkeleton.module.css */
+.skeletonSection {
+    padding: 2rem 0;
+    background: var(--section-bg, #ffffff);
+}
+
+.skeletonHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 1rem;
+}
+
+.skeletonSectionTitle {
+    height: 32px;
+    width: 200px;
+    background: var(--skeleton-shine, linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%));
+    background-size: 200% 100%;
+    animation: skeletonShine 1.5s infinite;
+    border-radius: 6px;
+}
+
+.skeletonViewMore {
+    height: 20px;
+    width: 100px;
+    background: var(--skeleton-shine, linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%));
+    background-size: 200% 100%;
+    animation: skeletonShine 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeletonGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 0 1rem;
+}
+
+@keyframes skeletonShine {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Темная тема */
+:global(.dark) .skeletonSection {
+    --section-bg: #1a1a1a;
+    --skeleton-shine: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .skeletonGrid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .skeletonHeader {
+        padding: 0 0.5rem;
+    }
+
+    .skeletonSectionTitle {
+        height: 28px;
+        width: 160px;
+    }
+
+    .skeletonViewMore {
+        height: 18px;
+        width: 80px;
+    }
+}
