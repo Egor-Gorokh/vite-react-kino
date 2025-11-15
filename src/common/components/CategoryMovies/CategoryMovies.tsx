@@ -1,5 +1,5 @@
 import s from './CategoryMovies.module.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     useGetPopularMoviesQuery,
@@ -8,7 +8,7 @@ import {
     useGetNowPlayingMoviesQuery
 } from '../../../features/movies/api/moviesApi.ts';
 import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
-import {useDispatch} from "react-redux";
+import { useDispatch } from "react-redux";
 
 type TabType = 'popular' | 'top-rated' | 'upcoming' | 'now-playing';
 
@@ -16,8 +16,22 @@ export const CategoryMovies = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState<TabType>('popular');
     const [favorites, setFavorites] = useState<number[]>([]);
-    const navigate = useNavigate(); // Добавил навигацию
+    const [currentPages, setCurrentPages] = useState({
+        popular: 1,
+        'top-rated': 1,
+        upcoming: 1,
+        'now-playing': 1
+    });
+    const [allMovies, setAllMovies] = useState<Record<TabType, any[]>>({
+        popular: [],
+        'top-rated': [],
+        upcoming: [],
+        'now-playing': []
+    });
+
+    const navigate = useNavigate();
     const dispatch = useDispatch();
+
     // Читаем параметр tab из URL при загрузке компонента
     useEffect(() => {
         const tabFromUrl = searchParams.get('tab') as TabType;
@@ -26,25 +40,136 @@ export const CategoryMovies = () => {
         }
     }, [searchParams]);
 
-    // Используем хуки для всех типов фильмов
-    const { data: popularMovies, isLoading: popularLoading, error: popularError } = useGetPopularMoviesQuery(1);
-    const { data: topRatedMovies, isLoading: topRatedLoading, error: topRatedError } = useGetTopRatedMoviesQuery(1);
-    const { data: upcomingMovies, isLoading: upcomingLoading, error: upcomingError } = useGetUpcomingMoviesQuery(1);
-    const { data: nowPlayingMovies, isLoading: nowPlayingLoading, error: nowPlayingError } = useGetNowPlayingMoviesQuery(1);
+    // Используем хуки для всех типов фильмов с пагинацией
+    const { data: popularMovies, isLoading: popularLoading, error: popularError } =
+        useGetPopularMoviesQuery(currentPages.popular);
+    const { data: topRatedMovies, isLoading: topRatedLoading, error: topRatedError } =
+        useGetTopRatedMoviesQuery(currentPages['top-rated']);
+    const { data: upcomingMovies, isLoading: upcomingLoading, error: upcomingError } =
+        useGetUpcomingMoviesQuery(currentPages.upcoming);
+    const { data: nowPlayingMovies, isLoading: nowPlayingLoading, error: nowPlayingError } =
+        useGetNowPlayingMoviesQuery(currentPages['now-playing']);
 
-    const handleTabChange = (tab: TabType) => {
-        setActiveTab(tab);
-        // Обновляем URL с новым параметром tab
-        setSearchParams({ tab });
+    // Получаем текущие данные для активного таба
+    const getCurrentData = () => {
+        switch (activeTab) {
+            case 'popular':
+                return {
+                    data: popularMovies,
+                    isLoading: popularLoading,
+                    error: popularError,
+                    currentPage: currentPages.popular
+                };
+            case 'top-rated':
+                return {
+                    data: topRatedMovies,
+                    isLoading: topRatedLoading,
+                    error: topRatedError,
+                    currentPage: currentPages['top-rated']
+                };
+            case 'upcoming':
+                return {
+                    data: upcomingMovies,
+                    isLoading: upcomingLoading,
+                    error: upcomingError,
+                    currentPage: currentPages.upcoming
+                };
+            case 'now-playing':
+                return {
+                    data: nowPlayingMovies,
+                    isLoading: nowPlayingLoading,
+                    error: nowPlayingError,
+                    currentPage: currentPages['now-playing']
+                };
+            default:
+                return {
+                    data: popularMovies,
+                    isLoading: popularLoading,
+                    error: popularError,
+                    currentPage: currentPages.popular
+                };
+        }
     };
 
-    // Добавил функцию для перехода на детальную страницу
+    const { data: currentData, isLoading: currentLoading, currentPage } = getCurrentData();
+
+    // Эффект для добавления новых данных при изменении currentData
+    useEffect(() => {
+        if (currentData?.results && currentData.results.length > 0) {
+            setAllMovies(prev => {
+                const currentTabMovies = prev[activeTab] || [];
+
+                // Если это первая страница, заменяем все фильмы
+                if (currentPage === 1) {
+                    return {
+                        ...prev,
+                        [activeTab]: currentData.results
+                    };
+                }
+
+                // Если это не первая страница, добавляем фильмы, избегая дубликатов
+                const newMovies = currentData.results.filter(
+                    newMovie => !currentTabMovies.some(existingMovie => existingMovie.id === newMovie.id)
+                );
+
+                return {
+                    ...prev,
+                    [activeTab]: [...currentTabMovies, ...newMovies]
+                };
+            });
+        }
+    }, [currentData, activeTab, currentPage]);
+
+    // Функция для загрузки следующей страницы
+    const loadMore = useCallback(() => {
+        if (currentLoading || !currentData) return;
+
+        // Проверяем, есть ли еще страницы для загрузки
+        if (currentData.total_pages && currentPage < currentData.total_pages) {
+            setCurrentPages(prev => ({
+                ...prev,
+                [activeTab]: prev[activeTab] + 1
+            }));
+        }
+    }, [activeTab, currentLoading, currentData, currentPage]);
+
+    // Обработчик скролла
+    useEffect(() => {
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+
+            // Загружаем следующую страницу когда до конца осталось 300px
+            if (scrollHeight - (scrollTop + clientHeight) < 300 && !currentLoading) {
+                loadMore();
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [loadMore, currentLoading]);
+
+    const handleTabChange = (tab: TabType) => {
+        // Сбрасываем страницу на 1 при смене таба
+        setCurrentPages(prev => ({
+            ...prev,
+            [tab]: 1
+        }));
+        setActiveTab(tab);
+        setSearchParams({ tab });
+
+        // Очищаем фильмы для нового таба (начинаем с пустого массива)
+        setAllMovies(prev => ({
+            ...prev,
+            [tab]: []
+        }));
+    };
+
     const handleMovieClick = (movieId: number) => {
         navigate(`/movie/${movieId}`);
     };
 
     const toggleFavorite = (movieId: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // Предотвращаем всплытие
+        e.stopPropagation();
         setFavorites(prev =>
             prev.includes(movieId)
                 ? prev.filter(id => id !== movieId)
@@ -67,23 +192,8 @@ export const CategoryMovies = () => {
         return stars;
     };
 
-    // Выбираем данные в зависимости от активного таба
-    const getCurrentMoviesData = () => {
-        switch (activeTab) {
-            case 'popular':
-                return { movies: popularMovies?.results || [], isLoading: popularLoading, error: popularError };
-            case 'top-rated':
-                return { movies: topRatedMovies?.results || [], isLoading: topRatedLoading, error: topRatedError };
-            case 'upcoming':
-                return { movies: upcomingMovies?.results || [], isLoading: upcomingLoading, error: upcomingError };
-            case 'now-playing':
-                return { movies: nowPlayingMovies?.results || [], isLoading: nowPlayingLoading, error: nowPlayingError };
-            default:
-                return { movies: popularMovies?.results || [], isLoading: popularLoading, error: popularError };
-        }
-    };
-
-    const { movies, isLoading, error } = getCurrentMoviesData();
+    const currentMovies = allMovies[activeTab] || [];
+    const hasMore = currentData?.total_pages && currentPage < currentData.total_pages;
 
     const tabs = [
         { id: 'popular', label: 'Popular Movies' },
@@ -92,11 +202,9 @@ export const CategoryMovies = () => {
         { id: 'now-playing', label: 'Now Playing Movies' }
     ];
 
-    if (isLoading) {
-        return <div className={s.loading}>Loading movies...</div>;
-    }
+    const currentError = getCurrentData().error;
 
-    if (error) {
+    if (currentError) {
         return <div className={s.error}>Error loading movies. Please try again later.</div>;
     }
 
@@ -119,32 +227,21 @@ export const CategoryMovies = () => {
             </div>
 
             <div className={s.moviesGrid}>
-                {movies.map((movie) => (
+                {currentMovies.map((movie, index) => (
                     <div
-                        key={movie.id}
+                        key={`${movie.id}-${index}`}
                         className={s.movieCard}
-                        onClick={() => handleMovieClick(movie.id)} // Добавил клик на карточку
+                        onClick={() => handleMovieClick(movie.id)}
                     >
                         <div className={s.movieImage}>
                             {movie.poster_path ? (
                                 <img
                                     src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                                     alt={movie.title}
-                                    className={s.movieImage}
+                                    className={s.posterImage}
                                 />
                             ) : (
-                                <div style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(45deg, #1a1a2e, #16213e)',
-                                    color: '#666',
-                                    fontSize: '0.8rem',
-                                    textAlign: 'center',
-                                    padding: '0.5rem'
-                                }}>
+                                <div className={s.noImage}>
                                     {movie.title}
                                 </div>
                             )}
@@ -152,10 +249,7 @@ export const CategoryMovies = () => {
 
                         <button
                             className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(movie.id, e);
-                            }}
+                            onClick={(e) => toggleFavorite(movie.id, e)}
                         >
                             <span className={s.heartIcon}>❤</span>
                         </button>
@@ -165,7 +259,7 @@ export const CategoryMovies = () => {
                             <p className={s.movieOriginalTitle}>{movie.original_title}</p>
 
                             <div className={s.movieRating}>
-                                <div className={s.ratingStars}>
+                                <div className={s.starsContainer}>
                                     {renderStars(movie.vote_average)}
                                 </div>
                                 <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
@@ -174,6 +268,27 @@ export const CategoryMovies = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Индикатор загрузки */}
+            {currentLoading && (
+                <div className={s.loading}>
+                    Loading more movies...
+                </div>
+            )}
+
+            {/* Сообщение когда все загружено */}
+            {!hasMore && currentMovies.length > 0 && (
+                <div className={s.endMessage}>
+                    You've seen all movies in this category!
+                </div>
+            )}
+
+            {/* Сообщение если нет фильмов */}
+            {!currentLoading && currentMovies.length === 0 && (
+                <div className={s.noMovies}>
+                    No movies found in this category.
+                </div>
+            )}
         </div>
     );
 };

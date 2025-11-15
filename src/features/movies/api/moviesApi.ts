@@ -51,22 +51,21 @@ export const moviesApi = baseApi.injectEndpoints({
             providesTags: ['Movies']
         }),
 
-        // Поиск фильмов
+
         searchMovies: builder.query({
-            query: (searchQuery: string) => ({
+            query: ({ query, page = 1 }: { query: string; page?: number }) => ({
                 url: 'search/movie',
                 params: {
                     api_key: import.meta.env.VITE_API_KEY,
-                    query: searchQuery,
+                    query: query,
                     language: 'en-US',
-                    page: 1,
+                    page: page,
                     include_adult: false
                 }
             }),
             providesTags: ['Movies']
         }),
 
-        // Детальная информация о фильме
         getMovieDetails: builder.query({
             query: (movieId: number) => ({
                 url: `movie/${movieId}`,

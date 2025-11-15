@@ -73,25 +73,61 @@ export const FilteredMovies = () => {
     const [ratingRange, setRatingRange] = useState<[number, number]>([0, 10]);
     const [favorites, setFavorites] = useState<number[]>([]);
     const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [allMovies, setAllMovies] = useState<Movie[]>([]);
+
     const sliderRef = useRef<HTMLDivElement>(null);
+    const isLoadingRef = useRef(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+    const lastFiltersRef = useRef<string>('');
 
     // Используем debounce для рейтинга с задержкой 200ms
     const debouncedRatingRange = useDebounce(ratingRange, 200);
 
-    // Получаем данные из API - используем топ рейтинговые фильмы
-    const { data: moviesData, isLoading, error } = useGetTopRatedMoviesQuery(1);
+    // Получаем данные из API с пагинацией
+    const { data: moviesData, isLoading, error } = useGetTopRatedMoviesQuery(currentPage);
 
-    // Преобразуем данные из API в наш формат
-    const movies: Movie[] = moviesData?.results?.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        original_title: movie.original_title,
-        vote_average: movie.vote_average,
-        genre_ids: movie.genre_ids,
-        poster_path: movie.poster_path,
-        release_date: movie.release_date,
-        popularity: movie.popularity
-    })) || [];
+    // Обновляем ref при изменении loading состояния
+    useEffect(() => {
+        isLoadingRef.current = isLoading;
+    }, [isLoading]);
+
+    // Эффект для добавления новых данных при изменении moviesData
+    useEffect(() => {
+        if (moviesData?.results && moviesData.results.length > 0) {
+            const newMovies: Movie[] = moviesData.results.map(movie => ({
+                id: movie.id,
+                title: movie.title,
+                original_title: movie.original_title,
+                vote_average: movie.vote_average,
+                genre_ids: movie.genre_ids,
+                poster_path: movie.poster_path,
+                release_date: movie.release_date,
+                popularity: movie.popularity
+            }));
+
+            setAllMovies(prev => {
+                if (currentPage === 1) {
+                    return newMovies;
+                }
+
+                // Добавляем фильмы, избегая дубликатов
+                const existingIds = new Set(prev.map(m => m.id));
+                const uniqueNewMovies = newMovies.filter(newMovie => !existingIds.has(newMovie.id));
+
+                return [...prev, ...uniqueNewMovies];
+            });
+        }
+    }, [moviesData, currentPage]);
+
+    // Сбрасываем пагинацию при изменении фильтров
+    useEffect(() => {
+        const currentFilters = `${sortBy}-${selectedGenres.join(',')}-${debouncedRatingRange[0]}-${debouncedRatingRange[1]}`;
+        if (currentFilters !== lastFiltersRef.current) {
+            setCurrentPage(1);
+            lastFiltersRef.current = currentFilters;
+        }
+    }, [sortBy, selectedGenres, debouncedRatingRange]);
 
     const sortOptions = [
         { id: 'popularity_desc', label: 'Popularity ↓' },
@@ -105,13 +141,16 @@ export const FilteredMovies = () => {
     ];
 
     // Сброс всех фильтров
-    const resetFilters = () => {
+    const resetFilters = useCallback(() => {
         setSortBy('popularity_desc');
         setSelectedGenres([]);
         setRatingRange([0, 10]);
-    };
+        setCurrentPage(1);
+        setAllMovies([]);
+        lastFiltersRef.current = '';
+    }, []);
 
-    const toggleFavorite = (movieId: number, e: React.MouseEvent) => {
+    const toggleFavorite = useCallback((movieId: number, e: React.MouseEvent) => {
         e.stopPropagation(); // Предотвращаем переход на страницу фильма
         setFavorites(prev =>
             prev.includes(movieId)
@@ -120,28 +159,68 @@ export const FilteredMovies = () => {
         );
 
         dispatch(toggleFavoriteAction(movieId));
-    };
+    }, [dispatch]);
 
-    const toggleGenre = (genreId: number) => {
+    const toggleGenre = useCallback((genreId: number) => {
         setSelectedGenres(prev =>
             prev.includes(genreId)
                 ? prev.filter(id => id !== genreId)
                 : [...prev, genreId]
         );
-    };
+    }, []);
 
     // Функция для получения URL изображения
-    const getImageUrl = (path: string | undefined, size: string = 'w500') => {
+    const getImageUrl = useCallback((path: string | undefined, size: string = 'w500') => {
         if (!path) return null;
         return `https://image.tmdb.org/t/p/${size}${path}`;
-    };
+    }, []);
 
     // Навигация на страницу деталей фильма
-    const handleMovieClick = (movieId: number) => {
+    const handleMovieClick = useCallback((movieId: number) => {
         navigate(`/movie/${movieId}`);
-    };
+    }, [navigate]);
 
-    // Обработчики для двойного ползунка с useCallback для оптимизации
+    // Функция для загрузки следующей страницы
+    const loadMore = useCallback(() => {
+        if (isLoadingRef.current || !moviesData) return;
+
+        if (moviesData.total_pages && currentPage < moviesData.total_pages) {
+            setCurrentPage(prev => prev + 1);
+        }
+    }, [moviesData, currentPage]);
+
+    // Оптимизированный обработчик скролла с троттлингом
+    const handleScroll = useCallback(() => {
+        if (isLoadingRef.current) return;
+
+        // Очищаем предыдущий таймаут
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+        }
+
+        // Устанавливаем новый таймаут для троттлинга
+        scrollTimeoutRef.current = setTimeout(() => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+
+            // Проверяем, достигли ли мы конца страницы (за 500px до конца)
+            if (scrollHeight - (scrollTop + clientHeight) < 500) {
+                loadMore();
+            }
+        }, 50); // Уменьшил задержку для лучшей отзывчивости
+    }, [loadMore]);
+
+    // Эффект для скролла
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, [handleScroll]);
+
+    // Обработчики для двойного ползунка
     const handleMouseDown = useCallback((thumb: 'min' | 'max') => (e: React.MouseEvent) => {
         e.preventDefault();
         setIsDragging(thumb);
@@ -177,13 +256,8 @@ export const FilteredMovies = () => {
         }
     }, [isDragging, handleMouseMove, handleMouseUp]);
 
-    // Эффект для обработки изменений рейтинга (с debounce)
-    useEffect(() => {
-        console.log('Rating range changed (debounced):', debouncedRatingRange);
-    }, [debouncedRatingRange]);
-
     // Фильтрация и сортировка фильмов (используем debounced рейтинг)
-    const filteredAndSortedMovies = movies
+    const filteredAndSortedMovies = allMovies
         .filter(movie => {
             // Фильтрация по жанрам
             if (selectedGenres.length > 0) {
@@ -219,7 +293,69 @@ export const FilteredMovies = () => {
     const minPosition = (ratingRange[0] / 10) * 100;
     const maxPosition = (ratingRange[1] / 10) * 100;
 
-    if (isLoading) {
+    const hasMore = moviesData?.total_pages && currentPage < moviesData.total_pages;
+
+    // Мемоизируем рендер карточек фильмов
+    const movieCards = filteredAndSortedMovies.map((movie, index) => {
+        const imageUrl = getImageUrl(movie.poster_path);
+
+        return (
+            <div
+                key={`${movie.id}-${index}`}
+                className={s.movieCard}
+                onClick={() => handleMovieClick(movie.id)}
+            >
+                <div className={s.movieImage}>
+                    {imageUrl ? (
+                        <img
+                            src={imageUrl}
+                            alt={movie.title}
+                            className={s.posterImage}
+                            loading="lazy"
+                        />
+                    ) : (
+                        <div className={s.moviePlaceholder}>
+                            {movie.title}
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
+                    onClick={(e) => toggleFavorite(movie.id, e)}
+                >
+                    <span className={s.heartIcon}>❤</span>
+                </button>
+
+                <div className={s.movieInfo}>
+                    <h3 className={s.movieTitle}>{movie.title}</h3>
+                    <p className={s.movieOriginalTitle}>{movie.original_title}</p>
+
+                    <div className={s.movieRating}>
+                        <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
+                    </div>
+
+                    <div className={s.movieDetails}>
+                        <span className={s.releaseDate}>
+                            {new Date(movie.release_date).getFullYear()}
+                        </span>
+                        <div className={s.movieGenres}>
+                            {movie.genre_ids.slice(0, 2).map(genreId => {
+                                const genre = TMDB_GENRES.find(g => g.id === genreId);
+                                return genre ? (
+                                    <span key={genreId} className={s.genreTag}>
+                                        {genre.name}
+                                    </span>
+                                ) : null;
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    });
+
+    if (isLoading && allMovies.length === 0) {
         return (
             <div className={s.filteredMovies}>
                 <div className={s.loading}>Loading movies...</div>
@@ -241,6 +377,9 @@ export const FilteredMovies = () => {
                 <h1 className={s.title}>Filtered Movies</h1>
                 <div className={s.resultsCount}>
                     Found {filteredAndSortedMovies.length} movies
+                    {allMovies.length > filteredAndSortedMovies.length && (
+                        <span className={s.showingCount}> (from {allMovies.length} total)</span>
+                    )}
                 </div>
             </div>
 
@@ -327,64 +466,22 @@ export const FilteredMovies = () => {
                     </div>
                 ) : (
                     <div className={s.moviesGrid}>
-                        {filteredAndSortedMovies.map((movie) => {
-                            const imageUrl = getImageUrl(movie.poster_path);
+                        {movieCards}
+                    </div>
+                )}
 
-                            return (
-                                <div
-                                    key={movie.id}
-                                    className={s.movieCard}
-                                    onClick={() => handleMovieClick(movie.id)}
-                                >
-                                    <div className={s.movieImage}>
-                                        {imageUrl ? (
-                                            <img
-                                                src={imageUrl}
-                                                alt={movie.title}
-                                                className={s.movieImage}
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <div className={s.moviePlaceholder}>
-                                                {movie.title}
-                                            </div>
-                                        )}
-                                    </div>
+                {/* Индикатор загрузки */}
+                {isLoading && (
+                    <div className={s.loading}>
+                        <div className={s.spinner}></div>
+                        Loading more movies... (Page {currentPage})
+                    </div>
+                )}
 
-                                    <button
-                                        className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
-                                        onClick={(e) => toggleFavorite(movie.id, e)}
-                                    >
-                                        <span className={s.heartIcon}>❤</span>
-                                    </button>
-
-                                    <div className={s.movieInfo}>
-                                        <h3 className={s.movieTitle}>{movie.title}</h3>
-                                        <p className={s.movieOriginalTitle}>{movie.original_title}</p>
-
-                                        <div className={s.movieRating}>
-                                            <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
-                                        </div>
-
-                                        <div className={s.movieDetails}>
-                                            <span className={s.releaseDate}>
-                                                {new Date(movie.release_date).getFullYear()}
-                                            </span>
-                                            <div className={s.movieGenres}>
-                                                {movie.genre_ids.slice(0, 2).map(genreId => {
-                                                    const genre = TMDB_GENRES.find(g => g.id === genreId);
-                                                    return genre ? (
-                                                        <span key={genreId} className={s.genreTag}>
-                                                            {genre.name}
-                                                        </span>
-                                                    ) : null;
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                {/* Сообщение когда все загружено */}
+                {!hasMore && filteredAndSortedMovies.length > 0 && (
+                    <div className={s.endMessage}>
+                        🎉 You've seen all {filteredAndSortedMovies.length} movies!
                     </div>
                 )}
             </div>
