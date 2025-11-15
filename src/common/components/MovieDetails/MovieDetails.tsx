@@ -1,6 +1,7 @@
 import s from './MovieDetails.module.css';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from "react-redux";
 import {
     useGetMovieDetailsQuery,
     useGetMovieCreditsQuery,
@@ -8,14 +9,16 @@ import {
     useGetMovieRecommendationsQuery,
     useGetMovieVideosQuery
 } from '../../../features/movies/api/moviesApi.ts';
+import { toggleFavorite, selectIsFavorite } from "../../../features/favorites/favoritesSlice.ts";
 
 export const MovieDetails = () => {
     const { id } = useParams();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
-    const [isFavorite, setIsFavorite] = useState(false);
-    const [activeImageTab, setActiveImageTab] = useState<'backdrops' | 'posters'>('backdrops');
-
     const movieId = parseInt(id!);
+
+    // Проверяем в Redux состоянии, есть ли фильм в избранных
+    const isFavorite = useSelector(selectIsFavorite(movieId));
 
     // Запросы для получения данных о фильме
     const { data: movie, isLoading: movieLoading, error: movieError } = useGetMovieDetailsQuery(movieId);
@@ -29,8 +32,8 @@ export const MovieDetails = () => {
         video.type === 'Trailer' && video.site === 'YouTube'
     );
 
-    const toggleFavorite = () => {
-        setIsFavorite(!isFavorite);
+    const toggleFavoriteHandler = () => {
+        dispatch(toggleFavorite(movieId));
     };
 
     const handleGoBack = () => {
@@ -151,8 +154,8 @@ export const MovieDetails = () => {
                                 </button>
                             )}
                             <button
-                                className={`${s.actionButton} ${s.addToFavorites}`}
-                                onClick={toggleFavorite}
+                                className={`${s.actionButton} ${s.addToFavorites} ${isFavorite ? s.favoriteActive : ''}`}
+                                onClick={toggleFavoriteHandler}
                             >
                                 <span>{isFavorite ? '❤' : '🤍'}</span>
                                 {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}

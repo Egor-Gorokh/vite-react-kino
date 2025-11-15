@@ -7,6 +7,8 @@ import {
     useGetUpcomingMoviesQuery,
     useGetNowPlayingMoviesQuery
 } from '../../../features/movies/api/moviesApi.ts';
+import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
+import {useDispatch} from "react-redux";
 
 type TabType = 'popular' | 'top-rated' | 'upcoming' | 'now-playing';
 
@@ -15,7 +17,7 @@ export const CategoryMovies = () => {
     const [activeTab, setActiveTab] = useState<TabType>('popular');
     const [favorites, setFavorites] = useState<number[]>([]);
     const navigate = useNavigate(); // Добавил навигацию
-
+    const dispatch = useDispatch();
     // Читаем параметр tab из URL при загрузке компонента
     useEffect(() => {
         const tabFromUrl = searchParams.get('tab') as TabType;
@@ -48,6 +50,7 @@ export const CategoryMovies = () => {
                 ? prev.filter(id => id !== movieId)
                 : [...prev, movieId]
         );
+        dispatch(toggleFavoriteAction(movieId));
     };
 
     const renderStars = (rating: number) => {

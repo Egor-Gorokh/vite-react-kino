@@ -406,6 +406,20 @@
             font-size: 0.9rem;
         }
     }
+    /* MovieDetails.module.css */
+    .addToFavorites {
+        /* ваши существующие стили */
+        transition: all 0.3s ease;
+    }
+
+    .favoriteActive {
+        background: linear-gradient(45deg, #ff6b6b, #ff8e8e) !important;
+        border-color: #ff6b6b !important;
+    }
+
+    .favoriteActive:hover {
+        background: linear-gradient(45deg, #ff5252, #ff7b7b) !important;
+    }
 
 
 }

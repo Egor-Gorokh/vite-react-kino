@@ -1,6 +1,9 @@
 import s from './MoviesSection.module.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { selectIsFavorite } from "../../../features/favorites/favoritesSlice.ts";
 
 interface Movie {
     id: number;
@@ -27,8 +30,8 @@ export const MoviesSection = ({
                                   viewMoreLink,
                                   showViewMore = true
                               }: MoviesSectionProps) => {
-    const [favorites, setFavorites] = useState<number[]>([]);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const handleViewMore = () => {
         navigate(viewMoreLink);
@@ -39,13 +42,9 @@ export const MoviesSection = ({
         navigate(`/movie/${movieId}`);
     };
 
-    const toggleFavorite = (movieId: number, e: React.MouseEvent) => {
+    const handleToggleFavorite = (movieId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        setFavorites(prev =>
-            prev.includes(movieId)
-                ? prev.filter(id => id !== movieId)
-                : [...prev, movieId]
-        );
+        dispatch(toggleFavoriteAction(movieId));
     };
 
     const renderStars = (rating: number) => {
@@ -87,46 +86,70 @@ export const MoviesSection = ({
 
             <div className={s.moviesGrid}>
                 {displayedMovies.map((movie) => (
-                    <div
+                    <MovieCard
                         key={movie.id}
-                        className={s.movieCard}
-                        onClick={() => handleMovieClick(movie.id)}
-                    >
-                        <div className={s.movieImage}>
-                            {movie.poster_path ? (
-                                <img
-                                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                                    alt={movie.title}
-                                    className={s.movieImage}
-                                    loading="lazy"
-                                />
-                            ) : (
-                                <div className={s.noImage}>
-                                    {movie.title}
-                                </div>
-                            )}
-                        </div>
-
-                        <button
-                            className={`${s.favoriteButton} ${favorites.includes(movie.id) ? s.active : ''}`}
-                            onClick={(e) => toggleFavorite(movie.id, e)}
-                        >
-                            <span className={s.heartIcon}>❤</span>
-                        </button>
-
-                        <div className={s.movieInfo}>
-                            <h3 className={s.movieTitle}>{movie.title}</h3>
-                            <p className={s.movieOriginalTitle}>{movie.original_title}</p>
-
-                            <div className={s.movieRating}>
-                                <div className={s.ratingStars}>
-                                    {renderStars(movie.vote_average)}
-                                </div>
-                                <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
-                            </div>
-                        </div>
-                    </div>
+                        movie={movie}
+                        onMovieClick={handleMovieClick}
+                        onToggleFavorite={handleToggleFavorite}
+                        renderStars={renderStars}
+                    />
                 ))}
+            </div>
+        </div>
+    );
+};
+
+// Отдельный компонент для карточки фильма чтобы использовать useSelector
+const MovieCard = ({
+                       movie,
+                       onMovieClick,
+                       onToggleFavorite,
+                       renderStars
+                   }: {
+    movie: Movie;
+    onMovieClick: (movieId: number) => void;
+    onToggleFavorite: (movieId: number, e: React.MouseEvent) => void;
+    renderStars: (rating: number) => JSX.Element[];
+}) => {
+    const isFavorite = useSelector(selectIsFavorite(movie.id));
+
+    return (
+        <div
+            className={s.movieCard}
+            onClick={() => onMovieClick(movie.id)}
+        >
+            <div className={s.movieImage}>
+                {movie.poster_path ? (
+                    <img
+                        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                        alt={movie.title}
+                        className={s.movieImg}
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className={s.noImage}>
+                        {movie.title}
+                    </div>
+                )}
+            </div>
+
+            <button
+                className={`${s.favoriteButton} ${isFavorite ? s.active : ''}`}
+                onClick={(e) => onToggleFavorite(movie.id, e)}
+            >
+                <span className={s.heartIcon}>❤</span>
+            </button>
+
+            <div className={s.movieInfo}>
+                <h3 className={s.movieTitle}>{movie.title}</h3>
+                <p className={s.movieOriginalTitle}>{movie.original_title}</p>
+
+                <div className={s.movieRating}>
+                    <div className={s.ratingStars}>
+                        {renderStars(movie.vote_average)}
+                    </div>
+                    <span className={s.ratingValue}>{movie.vote_average.toFixed(1)}/10</span>
+                </div>
             </div>
         </div>
     );

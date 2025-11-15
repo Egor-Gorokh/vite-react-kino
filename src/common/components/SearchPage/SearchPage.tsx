@@ -4,7 +4,10 @@ import s from './SearchPage.module.css';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search } from '../Search/Search.tsx';
-//import { useSearchMoviesQuery } from '../../../app/api/moviesApi';
+
+import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
+import {useDispatch} from "react-redux";
+
 
 interface Movie {
     id: number;
@@ -45,6 +48,7 @@ const TMDB_GENRES: Genre[] = [
 
 export const SearchPage = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [searchParams, setSearchParams] = useSearchParams();
     const [favorites, setFavorites] = useState<number[]>([]);
 
@@ -105,6 +109,7 @@ export const SearchPage = () => {
                 ? prev.filter(id => id !== movieId)
                 : [...prev, movieId]
         );
+        dispatch(toggleFavoriteAction(movieId));
     };
 
     // Функция для получения URL изображения

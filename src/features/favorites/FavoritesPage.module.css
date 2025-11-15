@@ -1,12 +1,15 @@
-.favorites {
+/* features/favorites/FavoritesPage.module.css */
+.favoritesPage {
     padding: 2rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     min-height: 80vh;
 }
 
 .header {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 3rem;
 }
 
@@ -17,46 +20,21 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 1rem;
 }
 
-.emptyState {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin: 2rem 0;
-}
-
-.emptyIcon {
-    font-size: 4rem;
-    margin-bottom: 1.5rem;
-    opacity: 0.7;
-}
-
-.emptyTitle {
-    font-size: 1.5rem;
+.favoritesCount {
+    background: rgba(1, 180, 228, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    color: #01b4e4;
     font-weight: 600;
-    margin-bottom: 1rem;
-    color: #ffffff;
+    border: 1px solid rgba(1, 180, 228, 0.3);
 }
 
-.emptyText {
-    color: #e3e3e3;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-/* Стили для сетки фильмов когда есть избранные */
 .moviesGrid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 1.5rem;
-    margin-bottom: 3rem;
 }
 
 .movieCard {
@@ -80,13 +58,32 @@
 .movieImage {
     width: 100%;
     height: 250px;
+    position: relative;
+    overflow: hidden;
+}
+
+.movieImg {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    background: linear-gradient(45deg, #1a1a2e, #16213e);
+    transition: transform 0.3s ease;
+}
+
+.movieCard:hover .movieImg {
+    transform: scale(1.05);
+}
+
+.noImage {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(45deg, #1a1a2e, #16213e);
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 0.5rem;
 }
 
 .favoriteButton {
@@ -104,6 +101,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    opacity: 1;
 }
 
 .favoriteButton:hover {
@@ -158,20 +156,63 @@
     font-size: 0.8rem;
 }
 
+/* Empty state */
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 1.5rem;
+}
+
+.emptyTitle {
+    font-size: 1.5rem;
+    color: #e3e3e3;
+    margin-bottom: 1rem;
+}
+
+.emptyText {
+    color: #999;
+    font-size: 1rem;
+    max-width: 400px;
+    line-height: 1.5;
+}
+
+/* Loading state */
+.loadingPlaceholder {
+    width: 100%;
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #1a1a2e, #16213e);
+    color: #666;
+}
+
+.loadingSpinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #01b4e4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 0.5rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Стили для светлой темы */
-:global(.lightTheme) .emptyState {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-:global(.lightTheme) .emptyTitle {
-    color: #333333;
-}
-
-:global(.lightTheme) .emptyText {
-    color: #666666;
-}
-
 :global(.lightTheme) .movieCard {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -185,6 +226,23 @@
     color: #333333;
 }
 
+:global(.lightTheme) .noImage {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    color: #6c757d;
+}
+
+:global(.lightTheme) .emptyTitle {
+    color: #333333;
+}
+
+:global(.lightTheme) .emptyText {
+    color: #666;
+}
+
+:global(.lightTheme) .loadingPlaceholder {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+}
+
 /* Адаптивность */
 @media (max-width: 1200px) {
     .moviesGrid {
@@ -193,7 +251,7 @@
 }
 
 @media (max-width: 768px) {
-    .favorites {
+    .favoritesPage {
         padding: 1rem;
     }
 
@@ -201,13 +259,27 @@
         font-size: 2rem;
     }
 
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
     .moviesGrid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
 
-    .movieImage {
+    .movieImage,
+    .noImage,
+    .loadingPlaceholder {
         height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .moviesGrid {
+        grid-template-columns: 1fr;
     }
 
     .emptyState {
@@ -217,26 +289,12 @@
     .emptyIcon {
         font-size: 3rem;
     }
-}
 
-@media (max-width: 480px) {
-    .moviesGrid {
-        grid-template-columns: 1fr;
+    .emptyTitle {
+        font-size: 1.25rem;
     }
-}
 
-/* Анимация появления */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
+    .emptyText {
+        font-size: 0.9rem;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.movieCard {
-    animation: fadeInUp 0.6s ease-out;
 }

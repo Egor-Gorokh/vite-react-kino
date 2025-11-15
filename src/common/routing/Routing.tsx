@@ -1,12 +1,13 @@
 import {Route, Routes} from "react-router-dom";
 import {PageNotFound} from "../components/PageNotFound/PageNotFound.tsx";
 import {MainPage} from "../../app/ui/MainPage/MainPage.tsx";
-import { Favorites} from "../components/Favorites/Favorites.tsx";
+
 import {CategoryMovies} from "../components/CategoryMovies/CategoryMovies.tsx";
 import {FilteredMovies} from "../components/FilteredMovies/FilteredMovies.tsx";
 
 import {SearchPage} from "../components/SearchPage/SearchPage.tsx";
 import {MovieDetails} from "../components/MovieDetails/MovieDetails.tsx";
+import {FavoritesPage} from "../../features/favorites/FavoritesPage.tsx";
 
 export const Path = {
     Main: '/',
@@ -23,7 +24,8 @@ export const Routing = () => (
         <Route path={Path.CategoryMovies} element={<CategoryMovies/>}/>
         <Route path={Path.FilteredMovies} element={<FilteredMovies/>}/>
         <Route path={Path.Search} element={<SearchPage/>}/>
-        <Route path={Path.Favorites} element={<Favorites/>}/>
+      {/*  <Route path={Path.Favorites} element={<Favorites/>}/>*/}
+        <Route path={Path.Favorites} element={<FavoritesPage/>}/>
         <Route path="/movie/:id" element={<MovieDetails />} />
 
         <Route path={Path.NotFound} element={<PageNotFound/>}/>

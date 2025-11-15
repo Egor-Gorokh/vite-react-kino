@@ -2,6 +2,9 @@ import s from './FilteredMovies.module.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetTopRatedMoviesQuery } from '../../../features/movies/api/moviesApi.ts';
+import { toggleFavorite as toggleFavoriteAction } from "../../../features/favorites/favoritesSlice.ts";
+import {useDispatch} from "react-redux";
+
 
 interface Movie {
     id: number;
@@ -62,6 +65,8 @@ const TMDB_GENRES: Genre[] = [
 ];
 
 export const FilteredMovies = () => {
+    const dispatch = useDispatch();
+
     const navigate = useNavigate();
     const [sortBy, setSortBy] = useState<SortOption>('popularity_desc');
     const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
@@ -113,6 +118,8 @@ export const FilteredMovies = () => {
                 ? prev.filter(id => id !== movieId)
                 : [...prev, movieId]
         );
+
+        dispatch(toggleFavoriteAction(movieId));
     };
 
     const toggleGenre = (genreId: number) => {
