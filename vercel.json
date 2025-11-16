@@ -2,5 +2,11 @@
   "env": {
     "VITE_BASE_URL": "https://api.themoviedb.org/3/",
     "VITE_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwZmQzYmZhNGU2NjlhM2RiYjEzYjQ5MzgzNjY3ODE5NyIsIm5iZiI6MTc2MTk5NDI5MS43MzYsInN1YiI6IjY5MDVlNjMzZmI4NzE5MjMwMmUxMjU0NiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wMenccjD5JQgaYT7evRHtcE3cdQoeQQGOs0T2rMXgBE"
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
