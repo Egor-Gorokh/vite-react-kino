@@ -98,7 +98,13 @@ export const MainPage = () => {
             </>
         );
     }
+// Добавьте этот код чтобы проверить переменные
+console.log('API Key:', import.meta.env.VITE_API_KEY);
+console.log('Base URL:', import.meta.env.VITE_BASE_URL);
 
+// Если переменные пустые, используйте заглушку
+const apiKey = import.meta.env.VITE_API_KEY || 'ваш_ключ_здесь';
+const baseUrl = import.meta.env.VITE_BASE_URL || 'https://api.themoviedb.org/3/';
     return (
         <>
             <div
